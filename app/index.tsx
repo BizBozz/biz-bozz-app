@@ -1,5 +1,9 @@
-import { Redirect } from 'expo-router';
+import "./../global.css";
+import { Redirect } from "expo-router";
 
 export default function Index() {
-  return <Redirect href="/(tabs)" />;
+  // TODO: Check authentication status
+  const isAuthenticated = false;
+
+  return <Redirect href={isAuthenticated ? "(app)/home" : "/login"} />;
 }
