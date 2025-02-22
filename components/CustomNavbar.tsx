@@ -4,10 +4,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { Link, usePathname } from "expo-router";
 
 const menuItems = [
-  { path: "/", label: "Home", icon: "home-outline" },
-  { path: "/explore", label: "Explore", icon: "compass-outline" },
-  { path: "/", label: "Favorites", icon: "heart-outline" },
-  { path: "/settings", label: "Settings", icon: "settings-outline" },
+  { path: "/(app)/home", label: "Home", icon: "home-outline" },
+  { path: "/(app)/explore", label: "Explore", icon: "compass-outline" },
 ];
 
 export default function CustomNavbar() {
