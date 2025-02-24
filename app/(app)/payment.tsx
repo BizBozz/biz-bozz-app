@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, Modal, Alert } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Modal,
+  Alert,
+} from "react-native";
 import { handlePayment } from "@/utils/order";
 import { useRouter } from "expo-router";
 import SuccessModal from "@/components/SuccessModal";
+import { useDispatch } from "react-redux";
+import { removeTable } from "@/redux/receiptSlice";
 
 interface PaymentModalProps {
   isVisible: boolean;
@@ -26,6 +35,7 @@ export default function PaymentModal({
   items,
 }: PaymentModalProps) {
   const router = useRouter();
+  const dispatch = useDispatch();
   const [paidPrice, setPaidPrice] = useState(totalAmount.toString());
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
@@ -52,8 +62,9 @@ export default function PaymentModal({
       };
 
       const result = await handlePayment(paymentData);
-      
+
       if (result.success) {
+        onClose(); // Close the calculator modal
         setShowSuccessModal(true);
       }
     } catch (error) {
@@ -64,6 +75,7 @@ export default function PaymentModal({
 
   const handleSuccessClose = () => {
     setShowSuccessModal(false);
+    dispatch(removeTable(selectedTable)); // Remove table state when success modal is closed
     onClose();
     router.push("/(app)/home");
   };
@@ -145,10 +157,7 @@ export default function PaymentModal({
         </View>
       </Modal>
 
-      <SuccessModal 
-        isVisible={showSuccessModal}
-        onClose={handleSuccessClose}
-      />
+      <SuccessModal isVisible={showSuccessModal} onClose={handleSuccessClose} />
     </>
   );
 }

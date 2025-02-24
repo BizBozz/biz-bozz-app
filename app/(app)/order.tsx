@@ -1,10 +1,10 @@
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, Pressable, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../redux/types";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import axios from "axios";
+// import axios from "axios";
 import getItems from "@/utils/menu";
 import { MenuItem, MenuResponse } from "@/types/menu";
 import {
@@ -27,17 +27,11 @@ export default function OrderPage() {
     (state: RootState) => state.receipts.selectedTable
   );
   const receipts = useSelector((state: RootState) => state.receipts.receipts);
-  console.log("receipts", receipts);
-
-  const currentItem = (menu: MenuItem) => {
-    if (!selectedTable || !receipts[selectedTable]) return null;
-    return receipts[selectedTable].items.find(
-      (item) => item.dishName === menu.dishName
-    );
-  };
 
   const getQuantity = (menu: MenuItem) => {
-    const item = currentItem(menu);
+    if (!selectedTable || !receipts[selectedTable]) return 0;
+    const items = receipts[selectedTable].items;
+    const item = items.find((item) => item.dishName === menu.dishName);
     return item?.quantity || 0;
   };
 
@@ -46,20 +40,14 @@ export default function OrderPage() {
       alert("Please select a table first.");
       return;
     }
-    // console.log("work");
-    if (selectedTable !== null) {
-      if (getQuantity(item) === 0) {
-        dispatch(addItemToReceipt({ table: selectedTable, item: item }));
-      } else {
-        dispatch(
-          incrementQuantity({
-            table: selectedTable,
-            itemName: item.dishName,
-          })
-        );
-      }
+
+    const quantity = getQuantity(item);
+    if (quantity === 0) {
+      dispatch(addItemToReceipt({ table: selectedTable, item }));
     } else {
-      alert("Please select a table first.");
+      dispatch(
+        incrementQuantity({ table: selectedTable, itemName: item.dishName })
+      );
     }
   };
 
@@ -69,10 +57,7 @@ export default function OrderPage() {
       return;
     }
     dispatch(
-      decrementQuantity({
-        table: selectedTable,
-        itemName: item.dishName,
-      })
+      decrementQuantity({ table: selectedTable, itemName: item.dishName })
     );
   };
 
@@ -130,14 +115,14 @@ export default function OrderPage() {
         >
           <View className="flex-row gap-4">
             {categorys.map((category, index) => (
-              <TouchableOpacity
+              <Pressable
                 key={index}
-                onPress={() => setSelectedCategory(category)}
+                onPressIn={() => setSelectedCategory(category)}
                 className={`${
                   selectedCategory === category
                     ? "bg-prilight"
                     : "bg-white border border-gray-200"
-                } flex items-center justify-center font-bold px-4 py-2 rounded-3xl`}
+                } flex items-center justify-center font-bold px-4 py-2 rounded-3xl active:opacity-80`}
               >
                 <Text
                   className={`font-bold ${
@@ -148,7 +133,7 @@ export default function OrderPage() {
                 >
                   {category}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </View>
         </ScrollView>
@@ -171,26 +156,22 @@ export default function OrderPage() {
                   </View>
                   <View className="flex-row items-center gap-4">
                     {getQuantity(item) > 0 && (
-                      <TouchableOpacity
-                        className="w-8 h-8 rounded-full bg-primary items-center justify-center"
-                        onPress={() => {
-                          handleDecrement(item);
-                        }}
+                      <Pressable
+                        className="w-8 h-8 rounded-full bg-primary items-center justify-center active:opacity-80"
+                        onPressIn={() => handleDecrement(item)}
                       >
                         <Text className="text-white text-xl">-</Text>
-                      </TouchableOpacity>
+                      </Pressable>
                     )}
                     <Text className="text-lg font-semibold">
                       {getQuantity(item)}
                     </Text>
-                    <TouchableOpacity
-                      className="w-8 h-8 rounded-full bg-primary items-center justify-center"
-                      onPress={() => {
-                        handleIncrement(item);
-                      }}
+                    <Pressable
+                      className="w-8 h-8 rounded-full bg-primary items-center justify-center active:opacity-80"
+                      onPressIn={() => handleIncrement(item)}
                     >
                       <Text className="text-white text-xl">+</Text>
-                    </TouchableOpacity>
+                    </Pressable>
                   </View>
                 </View>
               ))}
@@ -199,14 +180,14 @@ export default function OrderPage() {
         )}
       </View>
       <View className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200">
-        <TouchableOpacity
-          className="bg-primary px-4 py-5 rounded-full"
-          onPress={() => router.push("/(app)/receipt")}
+        <Pressable
+          className="bg-primary px-4 py-5 rounded-full active:opacity-80"
+          onPressIn={() => router.push("/(app)/receipt")}
         >
           <Text className="text-white text-center font-bold text-lg">
             View Receipt
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </SafeAreaView>
   );

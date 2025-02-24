@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../redux/types";
@@ -13,7 +13,11 @@ export default function HomeScreen() {
   );
   const receipts = useSelector((state: RootState) => state.receipts.receipts);
 
-  const handleTableSelect = (table: number) => {
+  const hasOrders = (table: string) => {
+    return receipts[table] && receipts[table].items.length > 0;
+  };
+
+  const handleTableSelect = (table: string) => {
     dispatch(selectTable(table));
     router.push("/(app)/order");
   };
@@ -21,19 +25,29 @@ export default function HomeScreen() {
   console.log(selectedTable);
 
   return (
-    <SafeAreaView className="flex-1 p-4 bg-white">
+    <SafeAreaView className="flex-1 bg-white p-4">
       <View>
         <Text className="text-4xl font-bold">Tables</Text>
       </View>
       <View className="mt-8 flex-row flex-wrap gap-4">
         {tables.map((table) => (
           <View key={table} className="">
-            <TouchableOpacity
-              className="border border-gray-300 px-6 py-4 rounded-lg font-bold"
-              onPress={() => handleTableSelect(table)}
+            <Pressable
+              className={`border border-primary px-6 py-4 rounded-lg font-bold ${
+                selectedTable === table ? "bg-orange-700" : ""
+              } ${hasOrders(table.toString()) ? "bg-primary" : ""}`}
+              onPress={() => handleTableSelect(table.toString())}
             >
-              <Text className="text-2xl">Table {table}</Text>
-            </TouchableOpacity>
+              <Text
+                className={`text-2xl ${
+                  selectedTable === table || hasOrders(table.toString())
+                    ? "text-white"
+                    : "text-primary"
+                }`}
+              >
+                Table {table}
+              </Text>
+            </Pressable>
           </View>
         ))}
       </View>

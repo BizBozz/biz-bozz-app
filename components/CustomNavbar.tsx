@@ -6,9 +6,14 @@ import { Link, usePathname } from "expo-router";
 const menuItems = [
   { path: "/(app)/home" as const, label: "Home", icon: "home-outline" },
   {
-    path: "/(app)/explore" as const,
-    label: "Explore",
+    path: "/(app)/menu/menu" as const,
+    label: "Menu Management",
     icon: "compass-outline",
+  },
+  {
+    path: "/(app)/order/orders" as const,
+    label: "Orders",
+    icon: "settings-outline",
   },
 ] as const;
 
@@ -20,7 +25,7 @@ export default function CustomNavbar() {
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
     Animated.timing(menuHeight, {
-      toValue: isMenuOpen ? 0 : 200,
+      toValue: isMenuOpen ? 0 : 175,
       duration: 300,
       useNativeDriver: false,
     }).start();
@@ -48,7 +53,7 @@ export default function CustomNavbar() {
         className="bg-white border-b border-gray-200"
         style={{ height: menuHeight }}
       >
-        <View className="flex-row flex-wrap p-4 gap-4">
+        <View className="py-4 gap-4">
           {menuItems.map((item) => (
             <Link href={item.path} key={item.path} asChild>
               <TouchableOpacity
@@ -56,12 +61,8 @@ export default function CustomNavbar() {
                   pathname.startsWith(item.path) ? "bg-orange-50" : ""
                 }`}
                 style={{ width: "45%" }}
+                onPress={toggleMenu}
               >
-                <Ionicons
-                  name={item.icon as any}
-                  size={20}
-                  color={pathname.startsWith(item.path) ? "#FF6B00" : "#8E8E93"}
-                />
                 <Text
                   className={`ml-2 ${
                     pathname.startsWith(item.path)
