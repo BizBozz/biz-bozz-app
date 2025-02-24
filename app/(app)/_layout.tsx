@@ -15,6 +15,8 @@ export default function AppLayout() {
         <Stack.Screen name="home" />
         <Stack.Screen name="explore" />
         <Stack.Screen name="order" />
+        <Stack.Screen name="receipt" />
+        <Stack.Screen name="payment" />
       </Stack>
     </View>
   );

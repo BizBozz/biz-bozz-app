@@ -99,10 +99,7 @@ export default function OrderPage() {
       ? menuItems.filter((item) => item.categoryName === selectedCategory)
       : menuItems;
     setFilteredItems(filtered[0]?.items || []);
-    // console.log("filter", filtered[0]);
   }, [selectedCategory, menuItems]);
-
-  // console.log("filteredItems", filteredItems);
 
   useEffect(() => {
     getAllCategory();
@@ -117,8 +114,8 @@ export default function OrderPage() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <View className="p-4">
+    <SafeAreaView className="flex-1 bg-white relative">
+      <View className="p-4 pb-24">
         <View className="flex-row items-center">
           <Text className="text-3xl font-bold">Menu</Text>
           <Text className="text-xl text-gray-400 font-bold ms-5">
@@ -160,12 +157,12 @@ export default function OrderPage() {
           <ScrollView
             showsVerticalScrollIndicator={false}
             className="mt-5"
-            contentContainerStyle={{ paddingBottom: 100 }}
+            contentContainerStyle={{ paddingBottom: 120 }}
           >
             <View className="mt-4">
               {filteredItems.map((item) => (
                 <View
-                  key={item.id}
+                  key={item._id}
                   className="flex-row mb-4 justify-between items-center bg-white px-4 py-5 rounded-xl border border-gray-300"
                 >
                   <View className="flex-1">
@@ -200,6 +197,16 @@ export default function OrderPage() {
             </View>
           </ScrollView>
         )}
+      </View>
+      <View className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200">
+        <TouchableOpacity
+          className="bg-primary px-4 py-5 rounded-full"
+          onPress={() => router.push("/(app)/receipt")}
+        >
+          <Text className="text-white text-center font-bold text-lg">
+            View Receipt
+          </Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );

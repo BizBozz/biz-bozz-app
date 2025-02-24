@@ -4,9 +4,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { Link, usePathname } from "expo-router";
 
 const menuItems = [
-  { path: "/(app)/home", label: "Home", icon: "home-outline" },
-  { path: "/(app)/explore", label: "Explore", icon: "compass-outline" },
-];
+  { path: "/(app)/home" as const, label: "Home", icon: "home-outline" },
+  {
+    path: "/(app)/explore" as const,
+    label: "Explore",
+    icon: "compass-outline",
+  },
+] as const;
 
 export default function CustomNavbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -49,18 +53,18 @@ export default function CustomNavbar() {
             <Link href={item.path} key={item.path} asChild>
               <TouchableOpacity
                 className={`flex-row items-center p-3 rounded-lg ${
-                  pathname === item.path ? "bg-orange-50" : ""
+                  pathname.startsWith(item.path) ? "bg-orange-50" : ""
                 }`}
                 style={{ width: "45%" }}
               >
                 <Ionicons
                   name={item.icon as any}
                   size={20}
-                  color={pathname === item.path ? "#FF6B00" : "#8E8E93"}
+                  color={pathname.startsWith(item.path) ? "#FF6B00" : "#8E8E93"}
                 />
                 <Text
                   className={`ml-2 ${
-                    pathname === item.path
+                    pathname.startsWith(item.path)
                       ? "text-orange-500 font-medium"
                       : "text-gray-600"
                   }`}
