@@ -5,7 +5,7 @@ import { MenuResponse } from "@/types/menu";
 const getCategory = async (): Promise<MenuResponse> => {
   try {
     const res = await axios.get("api/v1/categories");
-    console.log(res.data);
+    console.log(res);
     return res.data;
   } catch (error) {
     throw error;
