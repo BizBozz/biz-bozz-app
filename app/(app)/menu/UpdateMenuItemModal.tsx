@@ -5,34 +5,29 @@ import {
   TouchableOpacity,
   Modal,
   TextInput,
-  Image,
   ActivityIndicator,
 } from "react-native";
 import AlertModal from "@/app/components/AlertModal";
-import { Picker } from "@react-native-picker/picker";
-import addMenuItem from "@/utils/menumanegement/addMenuItem";
+import { MenuItem } from "@/types/menu";
 import pushMenuItem from "@/utils/menumanegement/pushMenuItem";
 
-interface CreateMenuItemModalProps {
+interface UpdateMenuItemModalProps {
   isVisible: boolean;
   onClose: () => void;
   onSuccess?: () => void;
-  categories: string[];
-  menuId?: string;
+  menuItem?: MenuItem;
 }
 
-export default function CreateMenuItemModal({
+export default function UpdateMenuItemModal({
   isVisible,
   onClose,
   onSuccess,
-  categories,
-  menuId,
-}: CreateMenuItemModalProps) {
+  menuItem,
+}: UpdateMenuItemModalProps) {
+  console.log(menuItem);
   const [isLoading, setIsLoading] = useState(false);
-  const [dishImage, setDishImage] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [dishName, setDishName] = useState("");
-  const [price, setPrice] = useState("");
+  const [dishName, setDishName] = useState(menuItem?.dishName || "");
+  const [price, setPrice] = useState(menuItem?.price?.toString() || "");
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean;
     title: string;
@@ -48,37 +43,31 @@ export default function CreateMenuItemModal({
     message: "",
   });
 
+  // Reset form when menuItem changes
+  React.useEffect(() => {
+    if (menuItem) {
+      setDishName(menuItem.dishName || "");
+      setPrice(menuItem.price?.toString() || "");
+    }
+  }, [menuItem]);
+
   const handleClose = () => {
     if (!isLoading) {
       onClose();
-      setDishImage(null);
-      setSelectedCategory("");
-      setDishName("");
-      setPrice("");
+      // Reset form
+      if (menuItem) {
+        setDishName(menuItem.dishName || "");
+        setPrice(menuItem.price?.toString() || "");
+      }
     }
   };
 
-  const handleAddDish = async () => {
+  const handleUpdateDish = async () => {
     if (!dishName.trim()) {
       setAlertConfig({
         visible: true,
         title: "Invalid Input",
         message: "Please enter a dish name",
-        buttons: [
-          {
-            text: "OK",
-            onPress: () => setAlertConfig({ ...alertConfig, visible: false }),
-          },
-        ],
-      });
-      return;
-    }
-
-    if (!selectedCategory) {
-      setAlertConfig({
-        visible: true,
-        title: "Invalid Input",
-        message: "Please select a category",
         buttons: [
           {
             text: "OK",
@@ -106,45 +95,22 @@ export default function CreateMenuItemModal({
 
     try {
       setIsLoading(true);
-      let response;
-
-      if (menuId) {
-        response = await pushMenuItem({
-          id: menuId,
-          categoryName: selectedCategory,
-          dishName: dishName.trim(),
-          price: price.trim(),
-        });
-      } else {
-        response = await addMenuItem({
-          categoryName: selectedCategory,
-          dishName: dishName.trim(),
-          price: price.trim(),
-        });
-      }
-
-      if (response.code === 201) {
+      const res = await pushMenuItem({
+        id: menuItem?._id || "",
+        dishName,
+        price: parseFloat(price),
+      });
+      if (res.code === 200) {
         onSuccess?.();
         handleClose();
-      } else {
-        setAlertConfig({
-          visible: true,
-          title: "Error",
-          message: response.message || "Failed to add menu item",
-          buttons: [
-            {
-              text: "OK",
-              onPress: () => setAlertConfig({ ...alertConfig, visible: false }),
-            },
-          ],
-        });
       }
+      // TODO: Add update API call here
     } catch (error) {
-      console.error("Failed to add menu item:", error);
+      console.error("Failed to update menu item:", error);
       setAlertConfig({
         visible: true,
         title: "Error",
-        message: "Failed to add menu item",
+        message: "Failed to update menu item",
         buttons: [
           {
             text: "OK",
@@ -162,32 +128,6 @@ export default function CreateMenuItemModal({
       <Modal visible={isVisible} transparent={true} animationType="fade">
         <View className="flex-1 bg-black/50 justify-center items-center p-4">
           <View className="bg-white w-full max-w-sm rounded-2xl px-6 py-[40px]">
-            <View className="mb-4">
-              <Text className="text-[16px] font-medium mb-2">Category</Text>
-              <View className="border border-gray-300 rounded-lg overflow-hidden px-3">
-                <Picker
-                  selectedValue={selectedCategory}
-                  onValueChange={(itemValue) => setSelectedCategory(itemValue)}
-                  enabled={!isLoading}
-                  style={{
-                    backgroundColor: "transparent",
-                    height: 50,
-                    color: "black",
-                    outline: "none",
-                  }}
-                >
-                  <Picker.Item label="Select Dish Category" value="" />
-                  {categories.map((category) => (
-                    <Picker.Item
-                      key={category}
-                      label={category}
-                      value={category}
-                    />
-                  ))}
-                </Picker>
-              </View>
-            </View>
-
             <View className="mb-4">
               <Text className="text-[16px] font-medium mb-2">Dish Name</Text>
               <TextInput
@@ -225,23 +165,18 @@ export default function CreateMenuItemModal({
                 <Text className="text-primary text-[16px]">Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={handleAddDish}
+                onPress={handleUpdateDish}
                 className={`bg-primary px-6 py-4 rounded-lg ${
-                  !dishName.trim() || !selectedCategory || !price.trim()
-                    ? "opacity-50"
-                    : ""
+                  !dishName.trim() || !price.trim() ? "opacity-50" : ""
                 }`}
-                disabled={
-                  !dishName.trim() ||
-                  !selectedCategory ||
-                  !price.trim() ||
-                  isLoading
-                }
+                disabled={!dishName.trim() || !price.trim() || isLoading}
               >
                 {isLoading ? (
                   <ActivityIndicator color="white" />
                 ) : (
-                  <Text className="text-white text-xl font-bold">Add Dish</Text>
+                  <Text className="text-white text-[16px] font-bold">
+                    Update
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>

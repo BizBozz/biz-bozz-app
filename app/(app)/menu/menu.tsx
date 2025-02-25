@@ -10,10 +10,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import getCategory from "@/utils/menumanegement/getCategory";
 import deleteCategory from "@/utils/menumanegement/deleteCategory";
+import deleteMenuItem from "@/utils/menumanegement/deleteMenuItem";
 import { MenuItem, MenuResponse } from "@/types/menu";
 import getItems from "@/utils/menu";
 import CreateCategoryModal from "@/app/(app)/menu/CreateCategoryModal";
 import CreateMenuItemModal from "@/app/(app)/menu/CreateMenuItemModal";
+import UpdateMenuItemModal from "@/app/(app)/menu/UpdateMenuItemModal";
 import AlertModal from "@/app/components/AlertModal";
 
 export default function MenuManagement() {
@@ -23,8 +25,15 @@ export default function MenuManagement() {
   const [selectedCategory, setSelectedCategory] = useState();
   const [categories, setCategories] = useState([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [isCreateCategoryModalVisible, setIsCreateCategoryModalVisible] = useState(false);
-  const [isCreateMenuItemModalVisible, setIsCreateMenuItemModalVisible] = useState(false);
+  const [isCreateCategoryModalVisible, setIsCreateCategoryModalVisible] =
+    useState(false);
+  const [isCreateMenuItemModalVisible, setIsCreateMenuItemModalVisible] =
+    useState(false);
+  const [isUpdateMenuItemModalVisible, setIsUpdateMenuItemModalVisible] =
+    useState(false);
+  const [selectedMenuItem, setSelectedMenuItem] = useState<
+    MenuItem | undefined
+  >();
   const [newCategoryName, setNewCategoryName] = useState("");
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean;
@@ -58,7 +67,7 @@ export default function MenuManagement() {
         setMenuItems(res.data);
       }
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       setLoading(false);
     }
   };
@@ -76,7 +85,7 @@ export default function MenuManagement() {
   }, [selectedCategory, menuItems]);
 
   const handleDeleteCategory = async (category: string) => {
-    console.log(category);
+    // console.log(category);
     setAlertConfig({
       visible: true,
       title: "Delete Category",
@@ -94,7 +103,7 @@ export default function MenuManagement() {
             setAlertConfig({ ...alertConfig, visible: false });
             try {
               const response = await deleteCategory({ id, category });
-              console.log(response);
+              // console.log(response);
               if (response.code === 200) {
                 await getAllCategory();
               } else {
@@ -105,13 +114,14 @@ export default function MenuManagement() {
                   buttons: [
                     {
                       text: "OK",
-                      onPress: () => setAlertConfig({ ...alertConfig, visible: false }),
+                      onPress: () =>
+                        setAlertConfig({ ...alertConfig, visible: false }),
                     },
                   ],
                 });
               }
             } catch (error) {
-              console.error("Failed to delete category", error);
+              // console.error("Failed to delete category", error);
               setAlertConfig({
                 visible: true,
                 title: "Error",
@@ -119,7 +129,8 @@ export default function MenuManagement() {
                 buttons: [
                   {
                     text: "OK",
-                    onPress: () => setAlertConfig({ ...alertConfig, visible: false }),
+                    onPress: () =>
+                      setAlertConfig({ ...alertConfig, visible: false }),
                   },
                 ],
               });
@@ -130,6 +141,66 @@ export default function MenuManagement() {
     });
   };
 
+  const handleDeleteMenuItem = async (item: MenuItem) => {
+    setAlertConfig({
+      visible: true,
+      title: "Delete Menu Item",
+      message: `Are you sure you want to delete "${item.dishName}"?`,
+      buttons: [
+        {
+          text: "Cancel",
+          style: "cancel",
+          onPress: () => setAlertConfig({ ...alertConfig, visible: false }),
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setAlertConfig({ ...alertConfig, visible: false });
+            try {
+              const response = await deleteMenuItem(item._id);
+              if (response.code === 200) {
+                await getAllMenu();
+              } else {
+                setAlertConfig({
+                  visible: true,
+                  title: "Error",
+                  message: response.message || "Failed to delete menu item",
+                  buttons: [
+                    {
+                      text: "OK",
+                      onPress: () =>
+                        setAlertConfig({ ...alertConfig, visible: false }),
+                    },
+                  ],
+                });
+              }
+            } catch (error) {
+              // console.error("Failed to delete menu item:", error);
+              setAlertConfig({
+                visible: true,
+                title: "Error",
+                message: "Failed to delete menu item",
+                buttons: [
+                  {
+                    text: "OK",
+                    onPress: () =>
+                      setAlertConfig({ ...alertConfig, visible: false }),
+                  },
+                ],
+              });
+            }
+          },
+        },
+      ],
+    });
+  };
+
+  const handleEditMenuItem = (item: MenuItem) => {
+    setSelectedMenuItem(item);
+    setIsUpdateMenuItemModalVisible(true);
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-white p-4">
       <View>
@@ -137,13 +208,12 @@ export default function MenuManagement() {
       </View>
 
       {/* Categories */}
-      {categories.length > 0 && (
-        <View className="flex-row items-center gap-3 mt-6">
-          <TouchableOpacity
-            onPress={() => setIsCreateCategoryModalVisible(true)}
-          >
-            <Ionicons name="add" size={24} color="#FF6B00" />
-          </TouchableOpacity>
+
+      <View className="flex-row items-center gap-3 mt-6">
+        <TouchableOpacity onPress={() => setIsCreateCategoryModalVisible(true)}>
+          <Ionicons name="add" size={24} color="#FF6B00" />
+        </TouchableOpacity>
+        {categories.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View className="flex-row gap-2">
               {categories.map((category, index) => (
@@ -169,11 +239,11 @@ export default function MenuManagement() {
               ))}
             </View>
           </ScrollView>
-        </View>
-      )}
+        )}
+      </View>
 
       {/* Add Menu Button */}
-      <TouchableOpacity 
+      <TouchableOpacity
         className="bg-primary py-4 rounded-xl mt-6"
         onPress={() => setIsCreateMenuItemModalVisible(true)}
       >
@@ -192,10 +262,16 @@ export default function MenuManagement() {
               <Text className="text-gray-500 mt-1">{item.price}</Text>
             </View>
             <View className="flex-row gap-2">
-              <TouchableOpacity className="p-2 bg-red-100 rounded-lg">
+              <TouchableOpacity
+                className="p-2 bg-red-100 rounded-lg"
+                onPress={() => handleDeleteMenuItem(item)}
+              >
                 <Ionicons name="trash-outline" size={20} color="#EF4444" />
               </TouchableOpacity>
-              <TouchableOpacity className="p-2 bg-orange-100 rounded-lg">
+              <TouchableOpacity
+                className="p-2 bg-orange-100 rounded-lg"
+                onPress={() => handleEditMenuItem(item)}
+              >
                 <Ionicons name="pencil-outline" size={20} color="#FF6B00" />
               </TouchableOpacity>
             </View>
@@ -220,6 +296,22 @@ export default function MenuManagement() {
           setIsCreateMenuItemModalVisible(false);
         }}
         categories={categories}
+        menuId="67a9ba58001e11a5cf9653d5"
+      />
+
+      {/* Update Menu Item Modal */}
+      <UpdateMenuItemModal
+        isVisible={isUpdateMenuItemModalVisible}
+        onClose={() => {
+          setIsUpdateMenuItemModalVisible(false);
+          setSelectedMenuItem(undefined);
+        }}
+        onSuccess={() => {
+          getAllMenu();
+          setIsUpdateMenuItemModalVisible(false);
+          setSelectedMenuItem(undefined);
+        }}
+        menuItem={selectedMenuItem}
       />
 
       <AlertModal
