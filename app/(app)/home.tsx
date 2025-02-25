@@ -22,7 +22,7 @@ export default function HomeScreen() {
     router.push("/(app)/order");
   };
 
-  console.log(selectedTable);
+  // console.log(selectedTable);
 
   return (
     <SafeAreaView className="flex-1 bg-white p-4">

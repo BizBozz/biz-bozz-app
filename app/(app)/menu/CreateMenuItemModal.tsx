@@ -11,7 +11,6 @@ import {
 import AlertModal from "@/app/components/AlertModal";
 import { Picker } from "@react-native-picker/picker";
 import addMenuItem from "@/utils/menumanegement/addMenuItem";
-import pushMenuItem from "@/utils/menumanegement/pushMenuItem";
 
 interface CreateMenuItemModalProps {
   isVisible: boolean;
@@ -19,6 +18,8 @@ interface CreateMenuItemModalProps {
   onSuccess?: () => void;
   categories: string[];
   menuId?: string;
+  selectedCategory?: string;
+  onSelectCategory?: (category: string) => void;
 }
 
 export default function CreateMenuItemModal({
@@ -26,11 +27,13 @@ export default function CreateMenuItemModal({
   onClose,
   onSuccess,
   categories,
-  menuId,
+  selectedCategory,
+  onSelectCategory,
 }: CreateMenuItemModalProps) {
+  // console.log(selectedCategory);
+  // console.log("onselect", selectedCategory);
   const [isLoading, setIsLoading] = useState(false);
   const [dishImage, setDishImage] = useState<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState("");
   const [dishName, setDishName] = useState("");
   const [price, setPrice] = useState("");
   const [alertConfig, setAlertConfig] = useState<{
@@ -52,7 +55,6 @@ export default function CreateMenuItemModal({
     if (!isLoading) {
       onClose();
       setDishImage(null);
-      setSelectedCategory("");
       setDishName("");
       setPrice("");
     }
@@ -106,22 +108,11 @@ export default function CreateMenuItemModal({
 
     try {
       setIsLoading(true);
-      let response;
-
-      if (menuId) {
-        response = await pushMenuItem({
-          id: menuId,
-          categoryName: selectedCategory,
-          dishName: dishName.trim(),
-          price: price.trim(),
-        });
-      } else {
-        response = await addMenuItem({
-          categoryName: selectedCategory,
-          dishName: dishName.trim(),
-          price: price.trim(),
-        });
-      }
+      const response = await addMenuItem({
+        categoryName: selectedCategory,
+        dishName: dishName.trim(),
+        price: price.trim(),
+      });
 
       if (response.code === 201) {
         onSuccess?.();
@@ -164,19 +155,21 @@ export default function CreateMenuItemModal({
           <View className="bg-white w-full max-w-sm rounded-2xl px-6 py-[40px]">
             <View className="mb-4">
               <Text className="text-[16px] font-medium mb-2">Category</Text>
-              <View className="border border-gray-300 rounded-lg overflow-hidden px-3">
+              <View className="border border-gray-300 rounded-lg overflow-hidden">
                 <Picker
                   selectedValue={selectedCategory}
-                  onValueChange={(itemValue) => setSelectedCategory(itemValue)}
+                  onValueChange={(itemValue) => onSelectCategory?.(itemValue)}
                   enabled={!isLoading}
                   style={{
                     backgroundColor: "transparent",
-                    height: 50,
-                    color: "black",
                     outline: "none",
                   }}
                 >
-                  <Picker.Item label="Select Dish Category" value="" />
+                  <Picker.Item
+                    label="Select Dish Category"
+                    value=""
+                    enabled={false}
+                  />
                   {categories.map((category) => (
                     <Picker.Item
                       key={category}
@@ -191,7 +184,7 @@ export default function CreateMenuItemModal({
             <View className="mb-4">
               <Text className="text-[16px] font-medium mb-2">Dish Name</Text>
               <TextInput
-                className="w-full text-[16px] border border-gray-300 rounded-lg p-4"
+                className="w-full text-[16px] border border-gray-300 rounded-lg py-4 px-5"
                 placeholder="Enter Your Dish Name"
                 value={dishName}
                 onChangeText={setDishName}

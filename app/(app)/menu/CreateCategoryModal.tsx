@@ -23,9 +23,11 @@ export default function CreateCategoryModal({
   isVisible,
   onClose,
   onSuccess,
+  selectedCategory,
 }: CreateCategoryModalProps) {
+  console.log("selectedCategory", selectedCategory);
   const [isLoading, setIsLoading] = useState(false);
-  const [categoryName, setCategoryName] = useState("");
+  const [categoryName, setCategoryName] = useState(selectedCategory);
   const [alertConfig, setAlertConfig] = useState<{
     visible: boolean;
     title: string;
@@ -126,7 +128,7 @@ export default function CreateCategoryModal({
                 className={`bg-primary px-6 py-4 rounded-lg ${
                   categoryName == "" ? "opacity-50" : ""
                 }`}
-                disabled={!categoryName.trim() || isLoading}
+                disabled={categoryName == "" || isLoading}
               >
                 {isLoading ? (
                   <ActivityIndicator color="white" />

@@ -59,6 +59,8 @@ export default function MenuManagement() {
     }
   };
 
+  console.log(selectedCategory);
+
   const getAllMenu = async () => {
     try {
       const res = (await getItems()) as MenuResponse;
@@ -290,13 +292,15 @@ export default function MenuManagement() {
       {/* Create Menu Item Modal */}
       <CreateMenuItemModal
         isVisible={isCreateMenuItemModalVisible}
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
         onClose={() => setIsCreateMenuItemModalVisible(false)}
         onSuccess={() => {
           getAllMenu();
           setIsCreateMenuItemModalVisible(false);
         }}
         categories={categories}
-        menuId="67a9ba58001e11a5cf9653d5"
+        menuId={id}
       />
 
       {/* Update Menu Item Modal */}

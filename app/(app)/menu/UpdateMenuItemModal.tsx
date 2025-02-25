@@ -141,7 +141,7 @@ export default function UpdateMenuItemModal({
 
             <View className="mb-8">
               <Text className="text-[16px] font-medium mb-2">Price</Text>
-              <View className="flex-row border border-gray-300 rounded-lg px-4 py-1">
+              <View className="flex-row border border-gray-300 rounded-lg px-3 py-1">
                 <TextInput
                   className="flex-1 text-[16px]"
                   placeholder="Enter Your Price"

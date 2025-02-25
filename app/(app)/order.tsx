@@ -74,7 +74,7 @@ export default function OrderPage() {
         setSelectedCategory(categoryArray[0] || null);
       }
     } catch (error) {
-      console.log(error);
+      // console.log(error);
       setLoading(false);
     }
   };
@@ -99,8 +99,8 @@ export default function OrderPage() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white relative">
-      <View className="p-4 pb-24">
+    <SafeAreaView className="relative h-screen w-screen bg-white relative">
+      <View className="p-4">
         <View className="flex-row items-center">
           <Text className="text-3xl font-bold">Menu</Text>
           <Text className="text-xl text-gray-400 font-bold ms-5">
@@ -179,7 +179,7 @@ export default function OrderPage() {
           </ScrollView>
         )}
       </View>
-      <View className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200">
+      <View className="absolute bottom-20 left-0 right-0 p-4 bg-white">
         <Pressable
           className="bg-primary px-4 py-5 rounded-full active:opacity-80"
           onPressIn={() => router.push("/(app)/receipt")}

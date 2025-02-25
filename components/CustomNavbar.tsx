@@ -32,7 +32,7 @@ export default function CustomNavbar() {
   };
 
   return (
-    <View>
+    <View className="relative">
       {/* Top Bar */}
       <View className="flex-row justify-between items-center px-4 py-4 bg-white border-b border-gray-200">
         <TouchableOpacity onPress={toggleMenu}>
