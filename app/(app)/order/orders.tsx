@@ -12,14 +12,17 @@ interface Order {
 
 interface MarkedDates {
   [date: string]: {
-    selected: boolean;
-    selectedColor: string;
+    startingDay?: boolean;
+    endingDay?: boolean;
+    color?: string;
+    textColor?: string;
   };
 }
 
 export default function Orders() {
   const [isCalendarVisible, setCalendarVisible] = useState(false);
-  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [startDate, setStartDate] = useState<string | null>(null);
+  const [endDate, setEndDate] = useState<string | null>(null);
   const [markedDates, setMarkedDates] = useState<MarkedDates>({});
   const [displayDateRange, setDisplayDateRange] = useState("");
 
@@ -35,44 +38,64 @@ export default function Orders() {
   ]);
 
   const onDayPress = (day: DateData) => {
-    const dateString = day.dateString;
-    let newSelectedDates = [...selectedDates];
-    let newMarkedDates = { ...markedDates };
-
-    if (selectedDates.includes(dateString)) {
-      // Remove date if already selected
-      newSelectedDates = newSelectedDates.filter((date) => date !== dateString);
-      delete newMarkedDates[dateString];
-    } else {
-      // Add new date
-      newSelectedDates.push(dateString);
-      newMarkedDates[dateString] = {
-        selected: true,
-        selectedColor: "#2196F3",
+    if (!startDate || (startDate && endDate)) {
+      // Start new range
+      const newMarkedDates: MarkedDates = {
+        [day.dateString]: {
+          startingDay: true,
+          color: "#2196F3",
+          textColor: "white",
+        },
       };
-    }
-
-    setSelectedDates(newSelectedDates);
-    setMarkedDates(newMarkedDates);
-
-    // Update display date range
-    if (newSelectedDates.length > 0) {
-      const sortedDates = [...newSelectedDates].sort();
-      const firstDate = new Date(sortedDates[0]).toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "2-digit",
-      });
-      const lastDate = new Date(
-        sortedDates[sortedDates.length - 1]
-      ).toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "2-digit",
-      });
-      setDisplayDateRange(`${firstDate} - ${lastDate}`);
+      setStartDate(day.dateString);
+      setEndDate(null);
+      setMarkedDates(newMarkedDates);
     } else {
-      setDisplayDateRange("");
+      // Complete the range
+      const newEndDate = day.dateString;
+      const newMarkedDates: MarkedDates = {};
+
+      // Ensure end date is after start date
+      const start = startDate < newEndDate ? startDate : newEndDate;
+      const end = startDate < newEndDate ? newEndDate : startDate;
+
+      // Create date range
+      let currentDate = new Date(start);
+      const endDateObj = new Date(end);
+
+      while (currentDate <= endDateObj) {
+        const dateString = currentDate.toISOString().split("T")[0];
+        newMarkedDates[dateString] = {
+          color: "#2196F3",
+          textColor: "white",
+        };
+
+        if (dateString === start) {
+          newMarkedDates[dateString].startingDay = true;
+        }
+        if (dateString === end) {
+          newMarkedDates[dateString].endingDay = true;
+        }
+
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      setStartDate(start);
+      setEndDate(end);
+      setMarkedDates(newMarkedDates);
+
+      // Update display date range
+      const formattedStartDate = new Date(start).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "2-digit",
+      });
+      const formattedEndDate = new Date(end).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "2-digit",
+      });
+      setDisplayDateRange(`${formattedStartDate} - ${formattedEndDate}`);
     }
   };
 
@@ -149,24 +172,33 @@ export default function Orders() {
         <View className="flex-1 justify-center items-center bg-black/50">
           <View className="bg-white p-6 rounded-2xl w-[90%]">
             <Text className="text-xl font-semibold mb-4">
-              Select Multiple Dates
+              Select Date Range
             </Text>
 
             <Calendar
               onDayPress={onDayPress}
               markedDates={markedDates}
-              markingType="multi-dot"
+              markingType="period"
               theme={{
-                selectedDayBackgroundColor: "#2196F3",
-                todayTextColor: "#2196F3",
-                arrowColor: "#2196F3",
+                todayTextColor: "#FF6F00",
+                arrowColor: "#FF6F00",
+                textDayFontSize: 16,
+                textMonthFontSize: 16,
+                textDayHeaderFontSize: 14,
               }}
             />
 
             {/* Action Buttons */}
             <View className="flex-row justify-end mt-4">
               <TouchableOpacity
-                onPress={() => setCalendarVisible(false)}
+                onPress={() => {
+                  setCalendarVisible(false);
+                  if (!endDate) {
+                    setStartDate(null);
+                    setMarkedDates({});
+                    setDisplayDateRange("");
+                  }
+                }}
                 className="px-4 py-2 mr-3"
               >
                 <Text className="text-gray-600">Cancel</Text>
