@@ -2,7 +2,7 @@ import { View, Text, ScrollView, TouchableOpacity, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
+import { Calendar, DateData } from "react-native-calendars";
 
 interface Order {
   id: number;
@@ -10,13 +10,18 @@ interface Order {
   totalPrice: string;
 }
 
-export default function OrdersManagement() {
-  const [selectedDate, setSelectedDate] = useState("24/02/25");
-  const [isStartDatePickerVisible, setStartDatePickerVisible] = useState(false);
-  const [isEndDatePickerVisible, setEndDatePickerVisible] = useState(false);
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
-  const [isDateRangeModalVisible, setDateRangeModalVisible] = useState(false);
+interface MarkedDates {
+  [date: string]: {
+    selected: boolean;
+    selectedColor: string;
+  };
+}
+
+export default function Orders() {
+  const [isCalendarVisible, setCalendarVisible] = useState(false);
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [markedDates, setMarkedDates] = useState<MarkedDates>({});
+  const [displayDateRange, setDisplayDateRange] = useState("");
 
   const [orders, setOrders] = useState<Order[]>([
     { id: 1, time: "3:43 PM", totalPrice: "26,250 MMK" },
@@ -29,29 +34,50 @@ export default function OrdersManagement() {
     { id: 8, time: "9:43 PM", totalPrice: "31,500 MMK" },
   ]);
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: '2-digit'
-    });
-  };
+  const onDayPress = (day: DateData) => {
+    const dateString = day.dateString;
+    let newSelectedDates = [...selectedDates];
+    let newMarkedDates = { ...markedDates };
 
-  const handleStartDateConfirm = (date: Date) => {
-    setStartDate(date);
-    setStartDatePickerVisible(false);
-  };
-
-  const handleEndDateConfirm = (date: Date) => {
-    setEndDate(date);
-    setEndDatePickerVisible(false);
-  };
-
-  const handleApplyDateRange = () => {
-    if (startDate && endDate) {
-      setSelectedDate(`${formatDate(startDate)} - ${formatDate(endDate)}`);
-      setDateRangeModalVisible(false);
+    if (selectedDates.includes(dateString)) {
+      // Remove date if already selected
+      newSelectedDates = newSelectedDates.filter((date) => date !== dateString);
+      delete newMarkedDates[dateString];
+    } else {
+      // Add new date
+      newSelectedDates.push(dateString);
+      newMarkedDates[dateString] = {
+        selected: true,
+        selectedColor: "#2196F3",
+      };
     }
+
+    setSelectedDates(newSelectedDates);
+    setMarkedDates(newMarkedDates);
+
+    // Update display date range
+    if (newSelectedDates.length > 0) {
+      const sortedDates = [...newSelectedDates].sort();
+      const firstDate = new Date(sortedDates[0]).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "2-digit",
+      });
+      const lastDate = new Date(
+        sortedDates[sortedDates.length - 1]
+      ).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "2-digit",
+      });
+      setDisplayDateRange(`${firstDate} - ${lastDate}`);
+    } else {
+      setDisplayDateRange("");
+    }
+  };
+
+  const handleApply = () => {
+    setCalendarVisible(false);
   };
 
   return (
@@ -60,11 +86,13 @@ export default function OrdersManagement() {
       <View className="px-4 py-2">
         <Text className="text-3xl font-semibold">Orders Management</Text>
         <View className="flex-row items-center mt-5">
-          <TouchableOpacity 
+          <TouchableOpacity
             className="flex-row items-center bg-orange-50 rounded-lg px-4 py-3"
-            onPress={() => setDateRangeModalVisible(true)}
+            onPress={() => setCalendarVisible(true)}
           >
-            <Text className="text-orange-500 text-lg mr-2">{selectedDate}</Text>
+            <Text className="text-orange-500 text-lg mr-2">
+              {displayDateRange || "Select Dates"}
+            </Text>
             <Ionicons name="calendar-outline" size={25} color="#FF6B00" />
           </TouchableOpacity>
           <TouchableOpacity className="ml-5 bg-red-500 rounded-lg px-4 py-3">
@@ -112,50 +140,40 @@ export default function OrdersManagement() {
         ))}
       </ScrollView>
 
-      {/* Date Range Modal */}
+      {/* Calendar Modal */}
       <Modal
-        animationType="fade"
+        visible={isCalendarVisible}
         transparent={true}
-        visible={isDateRangeModalVisible}
-        onRequestClose={() => setDateRangeModalVisible(false)}
+        animationType="slide"
       >
-        <View className="flex-1 bg-black/50 justify-center items-center">
-          <View className="bg-white w-[90%] rounded-xl p-4">
-            <Text className="text-xl font-semibold mb-4">Select Date Range</Text>
-            
-            {/* Start Date */}
-            <TouchableOpacity
-              className="flex-row items-center justify-between border border-gray-300 rounded-lg p-4 mb-3"
-              onPress={() => setStartDatePickerVisible(true)}
-            >
-              <Text className="text-gray-600">Start Date</Text>
-              <Text className="text-gray-800">
-                {startDate ? formatDate(startDate) : 'Select'}
-              </Text>
-            </TouchableOpacity>
+        <View className="flex-1 justify-center items-center bg-black/50">
+          <View className="bg-white p-6 rounded-2xl w-[90%]">
+            <Text className="text-xl font-semibold mb-4">
+              Select Multiple Dates
+            </Text>
 
-            {/* End Date */}
-            <TouchableOpacity
-              className="flex-row items-center justify-between border border-gray-300 rounded-lg p-4 mb-6"
-              onPress={() => setEndDatePickerVisible(true)}
-            >
-              <Text className="text-gray-600">End Date</Text>
-              <Text className="text-gray-800">
-                {endDate ? formatDate(endDate) : 'Select'}
-              </Text>
-            </TouchableOpacity>
+            <Calendar
+              onDayPress={onDayPress}
+              markedDates={markedDates}
+              markingType="multi-dot"
+              theme={{
+                selectedDayBackgroundColor: "#2196F3",
+                todayTextColor: "#2196F3",
+                arrowColor: "#2196F3",
+              }}
+            />
 
-            {/* Buttons */}
-            <View className="flex-row justify-end gap-3">
+            {/* Action Buttons */}
+            <View className="flex-row justify-end mt-4">
               <TouchableOpacity
-                className="px-4 py-2 rounded-lg bg-gray-100"
-                onPress={() => setDateRangeModalVisible(false)}
+                onPress={() => setCalendarVisible(false)}
+                className="px-4 py-2 mr-3"
               >
                 <Text className="text-gray-600">Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                className="px-4 py-2 rounded-lg bg-orange-500"
-                onPress={handleApplyDateRange}
+                onPress={handleApply}
+                className="bg-blue-500 px-4 py-2 rounded-lg"
               >
                 <Text className="text-white">Apply</Text>
               </TouchableOpacity>
@@ -163,21 +181,6 @@ export default function OrdersManagement() {
           </View>
         </View>
       </Modal>
-
-      {/* Date Pickers */}
-      <DateTimePickerModal
-        isVisible={isStartDatePickerVisible}
-        mode="date"
-        onConfirm={handleStartDateConfirm}
-        onCancel={() => setStartDatePickerVisible(false)}
-      />
-      <DateTimePickerModal
-        isVisible={isEndDatePickerVisible}
-        mode="date"
-        onConfirm={handleEndDateConfirm}
-        onCancel={() => setEndDatePickerVisible(false)}
-        minimumDate={startDate || undefined}
-      />
     </SafeAreaView>
   );
 }
