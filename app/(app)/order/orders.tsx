@@ -1,10 +1,12 @@
 import { View, Text, TouchableOpacity, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Calendar, DateData } from "react-native-calendars";
 import OrdersList from "../../../components/OrdersList";
 import { formatDateForDisplay } from "../../../utils/dateFormatter";
+import { deleteOrders } from "../../../utils/ordermanagement/deleteOrders";
+import AlertModal from "@/app/components/AlertModal";
 
 interface MarkedDates {
   [date: string]: {
@@ -15,12 +17,32 @@ interface MarkedDates {
   };
 }
 
+interface AlertConfig {
+  visible: boolean;
+  title: string;
+  message: string;
+  buttons?: {
+    text: string;
+    style?: "default" | "cancel" | "destructive";
+    onPress: () => void;
+  }[];
+}
+
 export default function Orders() {
   const today = new Date().toISOString().split("T")[0];
   const [isCalendarVisible, setCalendarVisible] = useState(false);
   const [startDate, setStartDate] = useState<string | null>(today);
   const [endDate, setEndDate] = useState<string | null>(today);
   const [selectAll, setSelectAll] = useState(false);
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
+  const [shouldRefetch, setShouldRefetch] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<AlertConfig>({
+    visible: false,
+    title: "",
+    message: "",
+    buttons: [],
+  });
+  const ordersListRef = useRef<any>(null);
   const [markedDates, setMarkedDates] = useState<MarkedDates>({
     [today]: {
       startingDay: true,
@@ -109,6 +131,80 @@ export default function Orders() {
     setCalendarVisible(false);
   };
 
+  const handleDeleteSuccess = () => {
+    // Reset selection state after successful deletion
+    setSelectAll(false);
+    setSelectedOrders(new Set());
+    setShouldRefetch(true);
+  };
+
+  const hideAlert = () => {
+    setAlertConfig((prev) => ({ ...prev, visible: false }));
+  };
+
+  const showSuccessAlert = (message: string) => {
+    setAlertConfig({
+      visible: true,
+      title: "Success",
+      message,
+      buttons: [],
+    });
+    
+    // Auto close after 1 second
+    setTimeout(hideAlert, 1000);
+  };
+
+  const showErrorAlert = (message: string) => {
+    setAlertConfig({
+      visible: true,
+      title: "Error",
+      message,
+      buttons: [{ text: "OK", onPress: hideAlert, style: "destructive" }],
+    });
+  };
+
+  const handleDelete = async () => {
+    if (selectedOrders.size === 0) {
+      setAlertConfig({
+        visible: true,
+        title: "No Orders Selected",
+        message: "Please select orders to delete.",
+        buttons: [{ text: "OK", onPress: hideAlert, style: "default" }],
+      });
+      return;
+    }
+
+    setAlertConfig({
+      visible: true,
+      title: "Confirm Delete",
+      message: `Are you sure you want to delete ${selectedOrders.size} selected order(s)?`,
+      buttons: [
+        {
+          text: "Cancel",
+          onPress: hideAlert,
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          onPress: confirmDelete,
+          style: "destructive",
+        },
+      ],
+    });
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await deleteOrders(Array.from(selectedOrders));
+      handleDeleteSuccess();
+      hideAlert();
+      showSuccessAlert("Orders deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting orders:", error);
+      showErrorAlert("Failed to delete orders. Please try again.");
+    }
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-white pt-2">
       {/* Header */}
@@ -124,7 +220,10 @@ export default function Orders() {
             </Text>
             <Ionicons name="calendar-outline" size={25} color="#FF6F00" />
           </TouchableOpacity>
-          <TouchableOpacity className="ml-5 bg-red-500 rounded-lg px-4 py-3">
+          <TouchableOpacity
+            className="ml-5 bg-red-500 rounded-lg px-4 py-3"
+            onPress={handleDelete}
+          >
             <Ionicons name="trash-outline" size={25} color="white" />
           </TouchableOpacity>
         </View>
@@ -132,18 +231,16 @@ export default function Orders() {
 
       {/* Table Header */}
       <View className="flex-row items-center px-4 py-5 bg-orange-500 mx-4 mt-3">
-        <TouchableOpacity 
+        <TouchableOpacity
           style={{ width: "10%" }}
           onPress={() => setSelectAll(!selectAll)}
         >
-          <View className={`h-5 w-5 border-2 rounded flex items-center justify-center ${
-            selectAll 
-              ? "bg-white border-white" 
-              : "border-white"
-          }`}>
-            {selectAll && (
-              <Text className="text-orange-500 text-xs">✓</Text>
-            )}
+          <View
+            className={`h-5 w-5 border-2 rounded flex items-center justify-center ${
+              selectAll ? "bg-white border-white" : "border-white"
+            }`}
+          >
+            {selectAll && <Text className="text-orange-500 text-xs">✓</Text>}
           </View>
         </TouchableOpacity>
         <Text
@@ -167,11 +264,24 @@ export default function Orders() {
       </View>
 
       {/* Orders List Component */}
-      <OrdersList 
-        startDate={startDate} 
-        endDate={endDate} 
+      <OrdersList
+        ref={ordersListRef}
+        startDate={startDate}
+        endDate={endDate}
         selectAll={selectAll}
         onSelectAll={setSelectAll}
+        onSelectedOrdersChange={setSelectedOrders}
+        onDeleteSuccess={handleDeleteSuccess}
+        shouldRefetch={shouldRefetch}
+        onRefetchComplete={() => setShouldRefetch(false)}
+      />
+
+      {/* Alert Modal */}
+      <AlertModal
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
       />
 
       {/* Calendar Modal */}
