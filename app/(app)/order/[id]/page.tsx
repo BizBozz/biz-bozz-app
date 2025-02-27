@@ -2,18 +2,38 @@ import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Ionicons } from "@expo/vector-icons";
+import Feather from "@expo/vector-icons/Feather";
 import {
   OrderDetails,
   fetchOrderDetails,
 } from "../../../../utils/ordermanagement/fetchOrderDetails";
+import { updateOrder } from "../../../../utils/ordermanagement/updateOrder";
 import { formatDateTimeForDisplay } from "../../../../utils/dateFormatter";
+import AlertModal from "@/app/components/AlertModal";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import { RootState } from "@/redux/types";
+import {
+  setCurrentOrder,
+  incrementOrderItem,
+  decrementOrderItem,
+  clearOrderEdited,
+} from "@/redux/orderSlice";
 
 export default function OrderDetailPage() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const [order, setOrder] = useState<OrderDetails | null>(null);
+  const dispatch = useDispatch();
+  const order = useSelector((state: RootState) => state.order.currentOrder);
+  const isEdited = useSelector((state: RootState) => state.order.isEdited);
   const [isLoading, setIsLoading] = useState(true);
+  const [alert, setAlert] = useState({
+    visible: false,
+    title: "",
+    message: "",
+    buttons: [] as { text: string; onPress: () => void; style?: string }[],
+  });
 
   useEffect(() => {
     loadOrderDetails();
@@ -23,21 +43,69 @@ export default function OrderDetailPage() {
     try {
       setIsLoading(true);
       const details = await fetchOrderDetails(id as string);
-      console.log("details", details);
-      setOrder(details);
+      dispatch(setCurrentOrder(details));
     } catch (error) {
       console.error("Failed to load order details:", error);
+      showErrorAlert("Failed to load order details");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const showSuccessAlert = (message: string) => {
+    setAlert({
+      visible: true,
+      title: "Success",
+      message,
+      buttons: [
+        {
+          text: "OK",
+          onPress: () => setAlert((prev) => ({ ...prev, visible: false })),
+        },
+      ],
+    });
+    setTimeout(() => setAlert((prev) => ({ ...prev, visible: false })), 1000);
+  };
+
+  const showErrorAlert = (message: string) => {
+    setAlert({
+      visible: true,
+      title: "Error",
+      message,
+      buttons: [
+        {
+          text: "OK",
+          onPress: () => setAlert((prev) => ({ ...prev, visible: false })),
+        },
+      ],
+    });
+  };
+
+  const handleSave = async () => {
+    if (!order || !isEdited) return;
+
+    try {
+      setIsLoading(true);
+      await updateOrder(order._id, {
+        orders: order.orders,
+        tax: order.tax,
+        totalPrice: order.totalPrice,
+        finalPrice: order.finalPrice,
+      });
+      showSuccessAlert("Order updated successfully");
+      dispatch(clearOrderEdited());
+      // Navigate back to refresh order list
+      setTimeout(() => router.back(), 1000);
+    } catch (error) {
+      console.error("Failed to update order:", error);
+      showErrorAlert("Failed to update order");
     } finally {
       setIsLoading(false);
     }
   };
 
   if (isLoading) {
-    return (
-      <View className="flex-1 justify-center items-center">
-        <Text className="text-gray-500">Loading order details...</Text>
-      </View>
-    );
+    return <LoadingSpinner message="Loading order details..." />;
   }
 
   if (!order) {
@@ -54,8 +122,19 @@ export default function OrderDetailPage() {
         {/* Header */}
         <View className="flex-row justify-between items-center mb-6">
           <View className="flex-row items-center gap-4">
+            <TouchableOpacity onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={24} color="#FF6F00" />
+            </TouchableOpacity>
             <Text className="text-3xl font-bold">Order Details</Text>
           </View>
+          {isEdited && (
+            <TouchableOpacity
+              className="px-4 py-2 bg-primary rounded-full"
+              onPress={handleSave}
+            >
+              <Text className="text-white font-medium">Save Changes</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Order Info */}
@@ -93,13 +172,38 @@ export default function OrderDetailPage() {
         </View>
 
         {/* Ordered Items */}
-        <Text className="font-semibold text-xl mb-6">Ordered Dishes</Text>
+        <View className="flex-row justify-between items-center mb-6">
+          <Text className="font-semibold text-xl">Ordered Dishes</Text>
+          <TouchableOpacity
+            className="px-4 py-2 bg-orange-100 rounded-full"
+            onPress={() =>
+              router.push({
+                pathname: "/(app)/order/addmoreitem",
+                params: { id: order._id },
+              })
+            }
+          >
+            <Text className="text-primary font-medium">Add More Items</Text>
+          </TouchableOpacity>
+        </View>
         <ScrollView className="mb-6">
           {order.orders.map((item, index) => (
             <View key={index} className="mb-4">
               <View className="flex-row justify-between items-center">
                 <Text className="font-semibold w-28">{item.dishName}</Text>
-                <Text className="font-semibold">{item.quantity} pcs</Text>
+                <View className="flex-row items-center gap-4">
+                  <TouchableOpacity
+                    onPress={() => dispatch(decrementOrderItem(item.dishName))}
+                  >
+                    <Feather name="minus-circle" size={24} color="orange" />
+                  </TouchableOpacity>
+                  <Text className="font-semibold">{item.quantity} pcs</Text>
+                  <TouchableOpacity
+                    onPress={() => dispatch(incrementOrderItem(item.dishName))}
+                  >
+                    <Feather name="plus-circle" size={24} color="orange" />
+                  </TouchableOpacity>
+                </View>
                 <Text className="font-semibold w-24 text-right">
                   {(item.price * item.quantity).toLocaleString()} Ks
                 </Text>
@@ -155,6 +259,13 @@ export default function OrderDetailPage() {
           </View>
         </View>
       </View>
+
+      <AlertModal
+        visible={alert.visible}
+        title={alert.title}
+        message={alert.message}
+        buttons={alert.buttons}
+      />
     </SafeAreaView>
   );
 }

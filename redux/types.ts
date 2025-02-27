@@ -1,3 +1,5 @@
+import { Order } from "./orderSlice";
+
 export interface Receipt {
   items: Array<{
     id: string;
@@ -17,4 +19,8 @@ export interface ReceiptState {
 
 export interface RootState {
   receipts: ReceiptState;
+  order: {
+    currentOrder: Order | null;
+    isEdited: boolean;
+  };
 }

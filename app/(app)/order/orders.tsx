@@ -2,11 +2,13 @@ import { View, Text, TouchableOpacity, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useState, useEffect, useRef } from "react";
+import { usePathname } from "expo-router";
 import { Calendar, DateData } from "react-native-calendars";
 import OrdersList from "../../../components/OrdersList";
 import { formatDateForDisplay } from "../../../utils/dateFormatter";
 import { deleteOrders } from "../../../utils/ordermanagement/deleteOrders";
 import AlertModal from "@/app/components/AlertModal";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 interface MarkedDates {
   [date: string]: {
@@ -54,6 +56,10 @@ export default function Orders() {
   const [displayDateRange, setDisplayDateRange] = useState(
     formatDateForDisplay(today)
   );
+  // const navigation = useNavigation();
+  const pathname = usePathname();
+  console.log(pathname);
+  const [isLoading, setIsLoading] = useState(false);
 
   const onDayPress = (day: DateData) => {
     if (!startDate || (startDate && endDate)) {
@@ -149,7 +155,7 @@ export default function Orders() {
       message,
       buttons: [],
     });
-    
+
     // Auto close after 1 second
     setTimeout(hideAlert, 1000);
   };
@@ -204,6 +210,17 @@ export default function Orders() {
       showErrorAlert("Failed to delete orders. Please try again.");
     }
   };
+
+  useEffect(() => {
+    if (pathname.includes("/order")) {
+      console.log("yes");
+      setShouldRefetch(true);
+    }
+  }, [pathname]);
+
+  if (isLoading) {
+    return <LoadingSpinner message="Loading orders..." />;
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-white pt-2">
