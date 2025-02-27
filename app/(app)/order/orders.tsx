@@ -1,14 +1,10 @@
-import { View, Text, ScrollView, TouchableOpacity, Modal } from "react-native";
+import { View, Text, TouchableOpacity, Modal } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Calendar, DateData } from "react-native-calendars";
-
-interface Order {
-  id: number;
-  time: string;
-  totalPrice: string;
-}
+import OrdersList from "../../../components/OrdersList";
+import { formatDateForDisplay } from "../../../utils/dateFormatter";
 
 interface MarkedDates {
   [date: string]: {
@@ -20,22 +16,22 @@ interface MarkedDates {
 }
 
 export default function Orders() {
+  const today = new Date().toISOString().split("T")[0];
   const [isCalendarVisible, setCalendarVisible] = useState(false);
-  const [startDate, setStartDate] = useState<string | null>(null);
-  const [endDate, setEndDate] = useState<string | null>(null);
-  const [markedDates, setMarkedDates] = useState<MarkedDates>({});
-  const [displayDateRange, setDisplayDateRange] = useState("");
-
-  const [orders, setOrders] = useState<Order[]>([
-    { id: 1, time: "3:43 PM", totalPrice: "26,250 MMK" },
-    { id: 2, time: "3:43 PM", totalPrice: "26,250 MMK" },
-    { id: 3, time: "3:44 PM", totalPrice: "10,500 MMK" },
-    { id: 4, time: "3:44 PM", totalPrice: "10,500 MMK" },
-    { id: 5, time: "3:47 PM", totalPrice: "26,250 MMK" },
-    { id: 6, time: "9:32 PM", totalPrice: "26,250 MMK" },
-    { id: 7, time: "9:40 PM", totalPrice: "47,250 MMK" },
-    { id: 8, time: "9:43 PM", totalPrice: "31,500 MMK" },
-  ]);
+  const [startDate, setStartDate] = useState<string | null>(today);
+  const [endDate, setEndDate] = useState<string | null>(today);
+  const [selectAll, setSelectAll] = useState(false);
+  const [markedDates, setMarkedDates] = useState<MarkedDates>({
+    [today]: {
+      startingDay: true,
+      endingDay: true,
+      color: "#FF6F00",
+      textColor: "white",
+    },
+  });
+  const [displayDateRange, setDisplayDateRange] = useState(
+    formatDateForDisplay(today)
+  );
 
   const onDayPress = (day: DateData) => {
     if (!startDate || (startDate && endDate)) {
@@ -43,7 +39,7 @@ export default function Orders() {
       const newMarkedDates: MarkedDates = {
         [day.dateString]: {
           startingDay: true,
-          color: "#2196F3",
+          color: "#FF6F00",
           textColor: "white",
         },
       };
@@ -66,7 +62,7 @@ export default function Orders() {
       while (currentDate <= endDateObj) {
         const dateString = currentDate.toISOString().split("T")[0];
         newMarkedDates[dateString] = {
-          color: "#2196F3",
+          color: "#FF6F00",
           textColor: "white",
         };
 
@@ -80,31 +76,41 @@ export default function Orders() {
         currentDate.setDate(currentDate.getDate() + 1);
       }
 
-      setStartDate(start);
-      setEndDate(end);
       setMarkedDates(newMarkedDates);
 
-      // Update display date range
-      const formattedStartDate = new Date(start).toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "2-digit",
-      });
-      const formattedEndDate = new Date(end).toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "2-digit",
-      });
-      setDisplayDateRange(`${formattedStartDate} - ${formattedEndDate}`);
+      // Update display date range with formatted dates
+      setStartDate(start);
+      setEndDate(end);
+      if (start === end) {
+        setDisplayDateRange(formatDateForDisplay(start));
+      } else {
+        setDisplayDateRange(
+          `${formatDateForDisplay(start)} - ${formatDateForDisplay(end)}`
+        );
+      }
     }
   };
 
   const handleApply = () => {
+    if (startDate && !endDate) {
+      // If only start date is selected, set end date to the same date
+      const newMarkedDates: MarkedDates = {
+        [startDate]: {
+          startingDay: true,
+          endingDay: true,
+          color: "#FF6F00",
+          textColor: "white",
+        },
+      };
+      setEndDate(startDate);
+      setMarkedDates(newMarkedDates);
+      setDisplayDateRange(formatDateForDisplay(startDate));
+    }
     setCalendarVisible(false);
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white pt-2">
       {/* Header */}
       <View className="px-4 py-2">
         <Text className="text-3xl font-semibold">Orders Management</Text>
@@ -113,10 +119,10 @@ export default function Orders() {
             className="flex-row items-center bg-orange-50 rounded-lg px-4 py-3"
             onPress={() => setCalendarVisible(true)}
           >
-            <Text className="text-orange-500 text-lg mr-2">
-              {displayDateRange || "Select Dates"}
+            <Text className="text-orange-500 text-xl mr-3">
+              {displayDateRange}
             </Text>
-            <Ionicons name="calendar-outline" size={25} color="#FF6B00" />
+            <Ionicons name="calendar-outline" size={25} color="#FF6F00" />
           </TouchableOpacity>
           <TouchableOpacity className="ml-5 bg-red-500 rounded-lg px-4 py-3">
             <Ionicons name="trash-outline" size={25} color="white" />
@@ -125,43 +131,48 @@ export default function Orders() {
       </View>
 
       {/* Table Header */}
-      <View className="flex-row items-center px-4 py-3 bg-orange-500 mx-4">
-        <View style={{ width: "10%" }}>
-          <View className="h-5 w-5 border-2 border-white rounded" />
-        </View>
-        <Text className="text-white font-medium" style={{ width: "15%" }}>
+      <View className="flex-row items-center px-4 py-5 bg-orange-500 mx-4 mt-3">
+        <TouchableOpacity 
+          style={{ width: "10%" }}
+          onPress={() => setSelectAll(!selectAll)}
+        >
+          <View className={`h-5 w-5 border-2 rounded flex items-center justify-center ${
+            selectAll 
+              ? "bg-white border-white" 
+              : "border-white"
+          }`}>
+            {selectAll && (
+              <Text className="text-orange-500 text-xs">✓</Text>
+            )}
+          </View>
+        </TouchableOpacity>
+        <Text
+          className="text-xl text-white font-medium"
+          style={{ width: "10%" }}
+        >
           No
         </Text>
-        <Text className="text-white font-medium" style={{ width: "35%" }}>
+        <Text
+          className="text-xl text-center text-white font-medium"
+          style={{ width: "50%" }}
+        >
           Order Time
         </Text>
-        <Text className="text-white font-medium" style={{ width: "40%" }}>
-          Total Price
+        <Text
+          className="text-xl text-center text-white font-medium"
+          style={{ width: "30%" }}
+        >
+          Total
         </Text>
       </View>
 
-      {/* Orders List */}
-      <ScrollView className="flex-1">
-        {orders.map((order) => (
-          <View
-            key={order.id}
-            className="flex-row items-center px-4 py-4 border-b border-gray-200 mx-4"
-          >
-            <View style={{ width: "10%" }}>
-              <View className="h-5 w-5 border border-gray-300 rounded" />
-            </View>
-            <Text className="text-gray-800" style={{ width: "15%" }}>
-              {order.id}
-            </Text>
-            <Text className="text-gray-800" style={{ width: "35%" }}>
-              {order.time}
-            </Text>
-            <Text className="text-gray-800" style={{ width: "40%" }}>
-              {order.totalPrice}
-            </Text>
-          </View>
-        ))}
-      </ScrollView>
+      {/* Orders List Component */}
+      <OrdersList 
+        startDate={startDate} 
+        endDate={endDate} 
+        selectAll={selectAll}
+        onSelectAll={setSelectAll}
+      />
 
       {/* Calendar Modal */}
       <Modal
@@ -185,11 +196,13 @@ export default function Orders() {
                 textDayFontSize: 16,
                 textMonthFontSize: 16,
                 textDayHeaderFontSize: 14,
+                selectedDayBackgroundColor: "#FF6F00",
+                selectedDayTextColor: "white",
               }}
             />
 
             {/* Action Buttons */}
-            <View className="flex-row justify-end mt-4">
+            <View className="flex-row justify-end mt-5">
               <TouchableOpacity
                 onPress={() => {
                   setCalendarVisible(false);
@@ -201,13 +214,13 @@ export default function Orders() {
                 }}
                 className="px-4 py-2 mr-3"
               >
-                <Text className="text-gray-600">Cancel</Text>
+                <Text className="text-gray-600 text-lg font-bold">Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleApply}
-                className="bg-blue-500 px-4 py-2 rounded-lg"
+                className="bg-primary px-6 py-3 rounded-lg"
               >
-                <Text className="text-white">Apply</Text>
+                <Text className="text-white text-lg font-bold">Apply</Text>
               </TouchableOpacity>
             </View>
           </View>
