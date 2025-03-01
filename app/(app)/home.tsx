@@ -29,7 +29,7 @@ export default function HomeScreen() {
       <View>
         <Text className="text-4xl font-bold">Tables</Text>
       </View>
-      <View className="mt-8 flex-row flex-wrap gap-4">
+      <View className="mt-8 flex-row flex-wrap items-center justify-center gap-4">
         {tables.map((table) => (
           <View key={table} className="">
             <Pressable
