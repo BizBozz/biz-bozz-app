@@ -1,15 +1,9 @@
 import React from "react";
 import { View, Text, Modal, TouchableOpacity, Image } from "react-native";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withRepeat,
-  withSequence,
-} from "react-native-reanimated";
 
 // Import the welcome image
-import welcome from "../assets/images/welcome.svg";
+import welcome from "./../assets/images/welcome.png";
+import { router } from "expo-router";
 
 interface SuccessModalProps {
   isVisible: boolean;
@@ -24,28 +18,28 @@ export default function Welcome({
   title = "Account Created!",
   description = "Your account has been successfully created.",
 }: SuccessModalProps) {
-  const scale = useSharedValue(1);
+  // const scale = useSharedValue(1);
 
-  // Create a bouncing animation for the image
-  React.useEffect(() => {
-    if (isVisible) {
-      scale.value = withRepeat(
-        withSequence(withSpring(0.5), withSpring(1.1)),
-        2,
-        true
-      );
-    }
-  }, []);
+  // // Create a bouncing animation for the image
+  // React.useEffect(() => {
+  //   if (isVisible) {
+  //     scale.value = withRepeat(
+  //       withSequence(withSpring(0.5), withSpring(1.1)),
+  //       2,
+  //       true
+  //     );
+  //   }
+  // }, []);
 
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: scale.value }],
-    };
-  });
+  // const animatedStyle = useAnimatedStyle(() => {
+  //   return {
+  //     transform: [{ scale: scale.value }],
+  //   };
+  // });
 
   return (
     <Modal
-      animationType="slide"
+      // animationType="slide"
       transparent={true}
       visible={isVisible}
       onRequestClose={onClose}
@@ -53,11 +47,9 @@ export default function Welcome({
       <View className="flex-1 bg-black/50 justify-center items-center">
         <View className="bg-white m-4 p-6 rounded-2xl items-center w-80">
           {/* Animated Welcome Image */}
-          <Animated.Image
-            source={welcome}
-            style={[{ width: 200, height: 200 }, animatedStyle]}
-            resizeMode="contain"
-          />
+          <View>
+            <Image source={welcome} className="w-40 h-40 mb-4" />
+          </View>
 
           {/* Success Text */}
           <Text className="text-2xl font-bold mb-2 text-center">{title}</Text>
@@ -66,7 +58,10 @@ export default function Welcome({
           {/* OK Button */}
           <TouchableOpacity
             className="bg-[#FF6B00] w-full py-4 rounded-full"
-            onPress={onClose}
+            onPress={() => {
+              onClose();
+              router.push("/login");
+            }}
           >
             <Text className="text-white text-center font-bold text-lg">OK</Text>
           </TouchableOpacity>

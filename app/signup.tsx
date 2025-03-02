@@ -16,7 +16,7 @@ import Welcome from "@/components/Welcom";
 export default function SignupScreen() {
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(true);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -58,8 +58,8 @@ export default function SignupScreen() {
 
   const CreateAccount = async () => {
     const response = await handleSignUp(formData);
-    console.log(response.message);
-    if (response?.data?.statusCode === 200) {
+    console.log(response);
+    if (response?.data?.statusCode === 201) {
       setShowSuccessModal(true);
     } else {
       setAlertVisible(true);
